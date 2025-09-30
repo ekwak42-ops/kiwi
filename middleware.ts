@@ -4,77 +4,84 @@ import { NextResponse, type NextRequest } from 'next/server'
 /**
  * Next.js 인증 미들웨어
  * Supabase 세션을 확인하고 보호된 라우트에 대한 접근을 제어합니다.
+ * 
+ * Supabase 공식 패턴: https://supabase.com/docs/guides/auth/server-side/nextjs
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // 공개 경로 (인증 체크 건너뛰기)
+  const publicPaths = ['/login', '/signup', '/']
+  const isPublicPath = publicPaths.some((path) => pathname === path)
+
+  // 공개 경로는 바로 통과
+  if (isPublicPath) {
+    return NextResponse.next()
+  }
+
   // 환경 변수 확인
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     console.error('❌ Supabase 환경 변수가 설정되지 않았습니다.')
-    console.error('NEXT_PUBLIC_SUPABASE_URL:', !!process.env.NEXT_PUBLIC_SUPABASE_URL)
-    console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-    // 환경 변수가 없으면 미들웨어를 건너뛰고 계속 진행
-    return NextResponse.next({
-      request,
-    })
+    // 환경 변수가 없으면 그냥 통과 (Vercel 배포 초기 상태)
+    return NextResponse.next()
   }
 
   let supabaseResponse = NextResponse.next({
     request,
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            )
+            supabaseResponse = NextResponse.next({
+              request,
+            })
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            )
+          },
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+      }
+    )
+
+    // IMPORTANT: Supabase 세션 갱신을 위해 반드시 호출해야 함
+    // Do not run code between createServerClient and supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    // 보호된 라우트 목록
+    const protectedRoutes = ['/sell', '/mypage', '/chat']
+    const isProtectedRoute = protectedRoutes.some((route) =>
+      pathname.startsWith(route)
+    )
+
+    // 로그인하지 않았는데 보호된 라우트에 접근하려는 경우
+    if (isProtectedRoute && !user) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/login'
+      redirectUrl.searchParams.set('redirectTo', pathname)
+      return NextResponse.redirect(redirectUrl)
     }
-  )
 
-  // 중요: Supabase 클라이언트를 사용하여 세션 갱신
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // 보호된 라우트 목록
-  const protectedRoutes = ['/sell', '/mypage', '/chat']
-
-  // 인증이 필요한 페이지인지 확인
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  )
-
-  // 로그인하지 않았는데 보호된 라우트에 접근하려는 경우
-  if (isProtectedRoute && !user) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/login'
-    redirectUrl.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(redirectUrl)
+    // IMPORTANT: 반드시 supabaseResponse를 반환해야 함
+    // 쿠키가 올바르게 설정되어야 세션이 유지됨
+    return supabaseResponse
+  } catch (error) {
+    // Supabase 호출 실패 시에도 페이지는 계속 진행
+    console.error('미들웨어 오류:', error)
+    return NextResponse.next()
   }
-
-  // 이미 로그인했는데 로그인/회원가입 페이지에 접근하려는 경우
-  if (user && (pathname.startsWith('/login') || pathname.startsWith('/signup'))) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/'
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  return supabaseResponse
 }
 
 /**
