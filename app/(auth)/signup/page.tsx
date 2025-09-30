@@ -1,15 +1,65 @@
+'use client'
+
 import Link from 'next/link'
+import { useState, useTransition } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { signUp } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { Metadata } from 'next'
+import { Label } from '@/components/ui/label'
 
-export const metadata: Metadata = {
-  title: '회원가입 - 키위마켓',
-  description: '키위마켓에 가입하고 우리 동네 중고 거래를 시작하세요',
-}
+// Zod 스키마 정의
+const signupSchema = z.object({
+  email: z
+    .string()
+    .min(1, '이메일을 입력해주세요')
+    .email('올바른 이메일 형식을 입력해주세요'),
+  password: z
+    .string()
+    .min(8, '비밀번호는 최소 8자 이상이어야 합니다')
+    .regex(/[a-zA-Z]/, '비밀번호에는 영문자가 포함되어야 합니다'),
+  name: z.string().min(2, '이름은 최소 2자 이상이어야 합니다'),
+  phone: z
+    .string()
+    .regex(/^010-\d{4}-\d{4}$/, '올바른 전화번호 형식을 입력해주세요 (예: 010-1234-5678)'),
+  address: z.string().min(3, '지역을 입력해주세요'),
+})
+
+type SignupForm = z.infer<typeof signupSchema>
 
 export default function SignupPage() {
+  const [isPending, startTransition] = useTransition()
+  const [serverError, setServerError] = useState<string>('')
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupForm>({
+    resolver: zodResolver(signupSchema),
+  })
+
+  const onSubmit = async (data: SignupForm) => {
+    setServerError('')
+    
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.append('email', data.email)
+      formData.append('password', data.password)
+      formData.append('name', data.name)
+      formData.append('phone', data.phone)
+      formData.append('address', data.address)
+
+      const result = await signUp(formData)
+      
+      if (result?.error) {
+        setServerError(result.error)
+      }
+    })
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -19,92 +69,107 @@ export default function SignupPage() {
         </p>
       </div>
 
-      <form action={signUp} className="space-y-4">
+      {serverError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{serverError}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* 이메일 */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            이메일
-          </label>
+          <Label htmlFor="email">이메일</Label>
           <Input
             id="email"
-            name="email"
             type="email"
             placeholder="example@email.com"
-            required
             autoComplete="email"
+            {...register('email')}
+            className={errors.email ? 'border-red-500' : ''}
           />
+          {errors.email && (
+            <p className="text-xs text-red-600 mt-1">{errors.email.message}</p>
+          )}
         </div>
 
         {/* 비밀번호 */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            비밀번호
-          </label>
+          <Label htmlFor="password">비밀번호</Label>
           <Input
             id="password"
-            name="password"
             type="password"
             placeholder="8자 이상 입력해주세요"
-            required
-            minLength={8}
             autoComplete="new-password"
+            {...register('password')}
+            className={errors.password ? 'border-red-500' : ''}
           />
+          {errors.password && (
+            <p className="text-xs text-red-600 mt-1">{errors.password.message}</p>
+          )}
           <p className="text-xs text-muted-foreground mt-1">
-            최소 8자 이상 입력해주세요
+            최소 8자 이상, 영문자 포함
           </p>
         </div>
 
         {/* 이름 */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            이름
-          </label>
+          <Label htmlFor="name">이름</Label>
           <Input
             id="name"
-            name="name"
             type="text"
             placeholder="홍길동"
-            required
             autoComplete="name"
+            {...register('name')}
+            className={errors.name ? 'border-red-500' : ''}
           />
+          {errors.name && (
+            <p className="text-xs text-red-600 mt-1">{errors.name.message}</p>
+          )}
         </div>
 
         {/* 전화번호 */}
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-            전화번호
-          </label>
+          <Label htmlFor="phone">전화번호</Label>
           <Input
             id="phone"
-            name="phone"
             type="tel"
             placeholder="010-1234-5678"
-            required
             autoComplete="tel"
+            {...register('phone')}
+            className={errors.phone ? 'border-red-500' : ''}
           />
+          {errors.phone && (
+            <p className="text-xs text-red-600 mt-1">{errors.phone.message}</p>
+          )}
         </div>
 
         {/* 주소 (동네) */}
         <div>
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-            우리 동네
-          </label>
+          <Label htmlFor="address">우리 동네</Label>
           <Input
             id="address"
-            name="address"
             type="text"
             placeholder="예: 서울시 강남구 역삼동"
-            required
             autoComplete="street-address"
+            {...register('address')}
+            className={errors.address ? 'border-red-500' : ''}
           />
+          {errors.address && (
+            <p className="text-xs text-red-600 mt-1">{errors.address.message}</p>
+          )}
           <p className="text-xs text-muted-foreground mt-1">
             거래할 지역을 입력해주세요
           </p>
         </div>
 
         {/* 회원가입 버튼 */}
-        <Button type="submit" className="w-full" size="lg">
-          회원가입
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={isPending}
+        >
+          {isPending ? '처리 중...' : '회원가입'}
         </Button>
       </form>
 

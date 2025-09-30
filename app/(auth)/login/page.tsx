@@ -1,16 +1,55 @@
+'use client'
+
 import Link from 'next/link'
+import { useState, useTransition } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { signIn } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
-import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: '로그인 - 키위마켓',
-  description: '키위마켓에 로그인하세요',
-}
+// Zod 스키마 정의
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, '이메일을 입력해주세요')
+    .email('올바른 이메일 형식을 입력해주세요'),
+  password: z.string().min(1, '비밀번호를 입력해주세요'),
+})
+
+type LoginForm = z.infer<typeof loginSchema>
 
 export default function LoginPage() {
+  const [isPending, startTransition] = useTransition()
+  const [serverError, setServerError] = useState<string>('')
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  })
+
+  const onSubmit = async (data: LoginForm) => {
+    setServerError('')
+
+    startTransition(async () => {
+      const formData = new FormData()
+      formData.append('email', data.email)
+      formData.append('password', data.password)
+
+      const result = await signIn(formData)
+
+      if (result?.error) {
+        setServerError(result.error)
+      }
+    })
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -20,35 +59,43 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <form action={signIn} className="space-y-4">
+      {serverError && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{serverError}</p>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* 이메일 */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            이메일
-          </label>
+          <Label htmlFor="email">이메일</Label>
           <Input
             id="email"
-            name="email"
             type="email"
             placeholder="example@email.com"
-            required
             autoComplete="email"
+            {...register('email')}
+            className={errors.email ? 'border-red-500' : ''}
           />
+          {errors.email && (
+            <p className="text-xs text-red-600 mt-1">{errors.email.message}</p>
+          )}
         </div>
 
         {/* 비밀번호 */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            비밀번호
-          </label>
+          <Label htmlFor="password">비밀번호</Label>
           <Input
             id="password"
-            name="password"
             type="password"
             placeholder="비밀번호를 입력하세요"
-            required
             autoComplete="current-password"
+            {...register('password')}
+            className={errors.password ? 'border-red-500' : ''}
           />
+          {errors.password && (
+            <p className="text-xs text-red-600 mt-1">{errors.password.message}</p>
+          )}
         </div>
 
         {/* 비밀번호 찾기 */}
@@ -62,8 +109,13 @@ export default function LoginPage() {
         </div>
 
         {/* 로그인 버튼 */}
-        <Button type="submit" className="w-full" size="lg">
-          로그인
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={isPending}
+        >
+          {isPending ? '처리 중...' : '로그인'}
         </Button>
       </form>
 
@@ -82,9 +134,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-gray-200"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-muted-foreground">
-              또는
-            </span>
+            <span className="px-2 bg-white text-muted-foreground">또는</span>
           </div>
         </div>
 
