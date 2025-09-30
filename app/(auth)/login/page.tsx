@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { signIn } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -74,7 +75,7 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      {/* 소셜 로그인 (옵션) */}
+      {/* 소셜 로그인 */}
       <div className="mt-8">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
@@ -87,8 +88,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="mt-4 text-center text-sm text-muted-foreground">
-          소셜 로그인은 추후 지원 예정입니다
+        <div className="mt-4">
+          <GoogleSignInButton />
         </div>
       </div>
     </div>
