@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { StartChatButton } from '@/components/products/StartChatButton'
 import Link from 'next/link'
 
 interface ProductPageProps {
@@ -189,14 +190,25 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                     삭제
                   </Button>
                 </>
+              ) : user ? (
+                <>
+                  <StartChatButton
+                    productId={product.id}
+                    sellerId={product.seller_id}
+                    isSold={isSold}
+                  />
+                  <Button variant="outline" disabled={isSold}>
+                    관심 상품
+                  </Button>
+                </>
               ) : (
                 <>
-                  <Button asChild className="flex-1" disabled={isSold || !user}>
-                    <Link href={`/chat?productId=${product.id}&sellerId=${product.seller_id}`}>
-                      {isSold ? '판매 완료' : !user ? '로그인 필요' : '채팅하기'}
+                  <Button asChild className="flex-1" disabled>
+                    <Link href="/login">
+                      로그인 필요
                     </Link>
                   </Button>
-                  <Button variant="outline" disabled={isSold}>
+                  <Button variant="outline" disabled>
                     관심 상품
                   </Button>
                 </>
