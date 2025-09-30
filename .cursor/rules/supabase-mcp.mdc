@@ -1,0 +1,118 @@
+---
+description: Supabase MCP를 사용한 데이터베이스 작업 규칙
+---
+
+# Supabase MCP 데이터베이스 작업 규칙
+
+데이터베이스 작업을 수행할 때는 **반드시 Supabase MCP 도구**를 사용해야 합니다.
+
+## 필수 사용 원칙
+
+### 1. 데이터베이스 스키마 작업 (DDL)
+- **테이블 생성/수정/삭제**: `mcp_supabase_apply_migration` 사용
+- **인덱스 추가**: `mcp_supabase_apply_migration` 사용
+- **외래 키 설정**: `mcp_supabase_apply_migration` 사용
+- **RLS 정책 설정**: `mcp_supabase_apply_migration` 사용
+
+```typescript
+// ❌ 직접 SQL 파일 작성 금지
+// ✅ mcp_supabase_apply_migration 도구 사용
+```
+
+### 2. 데이터 조회 및 조작 (DML)
+- **데이터 조회**: `mcp_supabase_execute_sql` 사용
+- **데이터 삽입/수정/삭제**: `mcp_supabase_execute_sql` 사용 (단, DDL은 apply_migration)
+
+### 3. 데이터베이스 탐색
+- **테이블 목록 조회**: `mcp_supabase_list_tables` 먼저 실행
+- **마이그레이션 확인**: `mcp_supabase_list_migrations`
+- **확장 프로그램 확인**: `mcp_supabase_list_extensions`
+
+## 주요 MCP 도구
+
+### 스키마 관리
+- `mcp_supabase_list_tables`: 테이블 목록 조회
+- `mcp_supabase_list_migrations`: 마이그레이션 이력 확인
+- `mcp_supabase_apply_migration`: 마이그레이션 적용 (DDL 작업)
+
+### 데이터 작업
+- `mcp_supabase_execute_sql`: SQL 쿼리 실행 (DML 작업)
+
+### TypeScript 타입 생성
+- `mcp_supabase_generate_typescript_types`: Supabase 타입 자동 생성
+
+### 디버깅 및 모니터링
+- `mcp_supabase_get_logs`: 로그 조회 (api, postgres, auth, storage 등)
+- `mcp_supabase_get_advisors`: 보안/성능 권고사항 확인
+
+### 프로젝트 정보
+- `mcp_supabase_get_project_url`: API URL 조회
+- `mcp_supabase_get_anon_key`: Anonymous 키 조회
+
+## 작업 흐름 예시
+
+### 새 테이블 생성
+1. `mcp_supabase_list_tables` - 기존 테이블 확인
+2. `mcp_supabase_apply_migration` - 테이블 생성 마이그레이션 적용
+3. `mcp_supabase_get_advisors` - RLS 정책 누락 확인
+4. `mcp_supabase_apply_migration` - RLS 정책 추가
+5. `mcp_supabase_generate_typescript_types` - 타입 생성
+
+### 데이터 조회
+1. `mcp_supabase_list_tables` - 테이블 구조 확인
+2. `mcp_supabase_execute_sql` - SELECT 쿼리 실행
+
+### 문제 해결
+1. `mcp_supabase_get_logs` - 로그 확인 (최근 1분 이내)
+2. `mcp_supabase_get_advisors` - 보안/성능 이슈 확인
+
+## 마이그레이션 명명 규칙
+
+```
+snake_case 사용
+예시:
+- create_users_table
+- add_product_images_table
+- enable_rls_on_products
+- add_location_to_users
+```
+
+## 주의사항
+
+1. **DDL과 DML 구분**
+   - DDL (CREATE, ALTER, DROP): `apply_migration` 사용
+   - DML (SELECT, INSERT, UPDATE, DELETE): `execute_sql` 사용
+
+2. **RLS(Row Level Security) 필수**
+   - 테이블 생성 후 반드시 `get_advisors`로 RLS 누락 확인
+   - 누락 시 즉시 RLS 정책 추가
+
+3. **타입 동기화**
+   - 스키마 변경 후 `generate_typescript_types` 실행
+   - 생성된 타입을 `/types/supabase.ts`에 저장
+
+4. **로그 확인**
+   - `get_logs`는 최근 1분 이내 로그만 반환
+   - 오래된 로그는 재현 후 확인
+
+5. **마이그레이션 이력 관리**
+   - 모든 스키마 변경은 마이그레이션으로 관리
+   - 절대 수동으로 DB 직접 수정 금지
+
+## 체크리스트
+
+DB 작업 전:
+- [ ] `list_tables`로 현재 스키마 확인
+- [ ] `list_migrations`로 마이그레이션 이력 확인
+
+DB 작업 후:
+- [ ] `get_advisors`로 보안/성능 이슈 확인
+- [ ] `generate_typescript_types`로 타입 업데이트
+- [ ] `get_logs`로 에러 확인 (필요시)
+
+## 절대 금지
+
+❌ Supabase 대시보드에서 직접 SQL 실행
+❌ 로컬 SQL 파일 생성 후 수동 실행
+❌ 마이그레이션 없이 스키마 변경
+❌ RLS 정책 없는 테이블 방치

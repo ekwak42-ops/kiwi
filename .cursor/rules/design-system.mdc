@@ -1,0 +1,320 @@
+---
+globs: components/**/*.tsx,app/**/*.tsx
+description: 디자인 시스템 및 UI 컴포넌트 규칙
+---
+
+# 디자인 시스템
+
+키위마켓의 디자인 가이드는 [docs/디자인가이드.md](mdc:docs/디자인가이드.md)를 참고하세요.
+
+## 디자인 컨셉
+
+**"신선하고 편리한 우리 동네 장터"**
+
+핵심 키워드: 신선함, 편리함, 신뢰, 빠른거래, 친근함
+
+## 컬러 팔레트
+
+```css
+/* Primary - 키위 그린 */
+--primary: #3DD598;
+
+/* Accent - 프레시 오렌지 */
+--accent: #FF8A00;
+
+/* Text - 다크 그레이 */
+--text: #333333;
+
+/* Background */
+--background: #FFFFFF;
+--muted: #F5F7FA;
+```
+
+## 타이포그래피
+
+### 폰트
+- **기본 폰트**: Pretendard 또는 Noto Sans KR
+- 현재 프로젝트는 Geist 폰트 사용 ([app/layout.tsx](mdc:app/layout.tsx) 참고)
+
+### 글자 크기 계층
+```tsx
+// 페이지 제목 (H1)
+className="text-4xl font-bold" // 28px Bold
+
+// 섹션 제목 (H2)
+className="text-2xl font-bold" // 22px Bold
+
+// 상품명 (Card Title)
+className="text-lg font-medium" // 18px Medium
+
+// 본문/설명
+className="text-base" // 16px Regular
+
+// 부가정보 (가격, 지역)
+className="text-sm font-semibold" // 14px Bold
+```
+
+## UI 컴포넌트 (shadcn/ui)
+
+이 프로젝트는 shadcn/ui를 사용합니다. [components/ui/](mdc:components/ui/)에 컴포넌트가 위치합니다.
+
+### 컴포넌트 추가
+```bash
+npx shadcn@latest add [component-name]
+```
+
+### 주요 컴포넌트
+
+#### Button
+```tsx
+import { Button } from '@/components/ui/button'
+
+// 기본 사용
+<Button>기본 버튼</Button>
+
+// Variants
+<Button variant="default">기본</Button>
+<Button variant="secondary">보조</Button>
+<Button variant="destructive">삭제</Button>
+<Button variant="outline">아웃라인</Button>
+<Button variant="ghost">고스트</Button>
+<Button variant="link">링크</Button>
+
+// Sizes
+<Button size="sm">작은 버튼</Button>
+<Button size="default">기본 버튼</Button>
+<Button size="lg">큰 버튼</Button>
+
+// 주요 액션 버튼 (오렌지 - Accent 컬러)
+<Button className="bg-[#FF8A00] hover:bg-[#FF8A00]/90">
+  구매 요청
+</Button>
+<Button className="bg-[#FF8A00] hover:bg-[#FF8A00]/90">
+  채팅하기
+</Button>
+```
+
+#### Card
+```tsx
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+
+<Card>
+  <CardHeader>
+    <CardTitle>상품 제목</CardTitle>
+    <CardDescription>상품 설명</CardDescription>
+  </CardHeader>
+  <CardContent>
+    <p>상품 상세 내용</p>
+  </CardContent>
+  <CardFooter>
+    <Button>자세히 보기</Button>
+  </CardFooter>
+</Card>
+```
+
+### 상품 카드 레이아웃
+
+```tsx
+// 그리드 레이아웃 (반응형)
+<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+  {products.map((product) => (
+    <Card key={product.id}>
+      <CardHeader>
+        {/* 썸네일 이미지 */}
+        <img src={product.image} alt={product.title} />
+        
+        {/* 상태 뱃지 */}
+        {product.status === 'sold' && (
+          <div className="absolute top-2 left-2 bg-gray-900/80 text-white px-2 py-1 rounded text-sm">
+            거래완료
+          </div>
+        )}
+      </CardHeader>
+      <CardContent>
+        <CardTitle>{product.title}</CardTitle>
+        <p className="text-lg font-bold text-[#FF8A00]">
+          {product.price.toLocaleString()}원
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {product.location}
+        </p>
+      </CardContent>
+      <CardFooter>
+        <Button variant="outline" className="w-full">
+          자세히 보기
+        </Button>
+      </CardFooter>
+    </Card>
+  ))}
+</div>
+```
+
+## 레이아웃 패턴
+
+### 헤더 구조
+```tsx
+<header className="border-b">
+  <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    {/* 로고 */}
+    <h1 className="text-2xl font-bold text-[#3DD598]">키위마켓</h1>
+    
+    {/* 우리 동네 설정 */}
+    <button className="flex items-center gap-2">
+      <MapPinIcon />
+      <span>강남구</span>
+    </button>
+    
+    {/* 검색창 */}
+    <input 
+      type="search" 
+      placeholder="상품 검색"
+      className="flex-1 mx-4"
+    />
+    
+    {/* 판매하기 버튼 (오렌지) */}
+    <Button className="bg-[#FF8A00] hover:bg-[#FF8A00]/90">
+      판매하기
+    </Button>
+    
+    {/* 로그인/내 정보 */}
+    <Button variant="ghost">로그인</Button>
+  </div>
+</header>
+```
+
+### 메인 컨텐츠 영역
+```tsx
+<main className="container mx-auto px-4 py-8">
+  {/* 페이지 제목 */}
+  <h1 className="text-4xl font-bold mb-8">
+    우리 동네 중고 물품
+  </h1>
+  
+  {/* 컨텐츠 */}
+  <div className="space-y-8">
+    {children}
+  </div>
+</main>
+```
+
+### 상품 상세 페이지
+```tsx
+<div className="grid md:grid-cols-2 gap-8">
+  {/* 이미지 캐러셀 (상하좌우 사진) */}
+  <div>
+    <ImageCarousel images={product.images} />
+  </div>
+  
+  {/* 상품 정보 */}
+  <div className="space-y-6">
+    <h1 className="text-3xl font-bold">{product.title}</h1>
+    <p className="text-2xl font-bold text-[#FF8A00]">
+      {product.price.toLocaleString()}원
+    </p>
+    
+    {/* 판매자 정보 */}
+    <div className="flex items-center gap-3">
+      <Avatar />
+      <div>
+        <p className="font-medium">{seller.name}</p>
+        <p className="text-sm text-muted-foreground">{seller.location}</p>
+      </div>
+    </div>
+    
+    {/* 상세 설명 */}
+    <p className="text-base">{product.description}</p>
+    
+    {/* Google Maps */}
+    <div className="h-64 rounded-lg overflow-hidden">
+      <GoogleMapComponent />
+    </div>
+  </div>
+</div>
+
+{/* Floating 액션 버튼 (하단 고정) */}
+<div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+  <div className="container mx-auto flex gap-4">
+    <Button 
+      variant="outline" 
+      className="flex-1"
+    >
+      채팅하기
+    </Button>
+    <Button 
+      className="flex-1 bg-[#FF8A00] hover:bg-[#FF8A00]/90"
+    >
+      구매 요청
+    </Button>
+  </div>
+</div>
+```
+
+## 버튼 및 인터랙션
+
+### 둥근 모서리
+모든 버튼과 카드는 둥근 모서리를 사용하여 친근한 느낌을 줍니다.
+
+```tsx
+// Tailwind CSS 기본값 사용 (rounded)
+<Button className="rounded-lg">버튼</Button>
+<Card className="rounded-xl">카드</Card>
+```
+
+### 아이콘
+lucide-react 라이브러리 사용:
+
+```tsx
+import { MessageCircle, MapPin, User, Search } from 'lucide-react'
+
+<Button>
+  <MessageCircle className="mr-2 h-4 w-4" />
+  채팅하기
+</Button>
+```
+
+## 반응형 디자인
+
+### 브레이크포인트
+```tsx
+// Tailwind CSS 기본 브레이크포인트
+sm: 640px  // 모바일
+md: 768px  // 태블릿
+lg: 1024px // 데스크톱
+xl: 1280px // 대형 데스크톱
+```
+
+### 그리드 레이아웃
+```tsx
+// 모바일: 1열, 태블릿: 2열, 데스크톱: 3열
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {/* 카드들 */}
+</div>
+```
+
+## 접근성 (Accessibility)
+
+- 모든 이미지에 alt 텍스트 제공
+- 시맨틱 HTML 사용 (header, main, nav, footer)
+- 키보드 네비게이션 지원
+- ARIA 속성 활용
+- 충분한 색상 대비 (WCAG AA 준수)
+
+```tsx
+// ✅ 좋은 예
+<button aria-label="상품 삭제">
+  <TrashIcon />
+</button>
+
+<img src={product.image} alt={`${product.title} 상품 사진`} />
+```
+
+## Dark Mode (향후 고려사항)
+
+shadcn/ui는 기본적으로 Dark Mode를 지원합니다. 향후 필요시 `next-themes`를 사용하여 구현 가능합니다.

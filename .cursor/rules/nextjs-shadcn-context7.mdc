@@ -1,0 +1,193 @@
+---
+globs: *.tsx,*.ts,*.jsx,*.js
+description: Next.js 및 shadcn/ui 작업 시 Context7 MCP를 활용한 최신 문서 참조 규칙
+---
+
+# Next.js & shadcn/ui Context7 MCP 활용 규칙
+
+## 개요
+Next.js와 shadcn/ui를 사용하는 작업을 할 때는 **반드시 Context7 MCP 도구를 활용**하여 최신 문서와 베스트 프랙티스를 확인해야 합니다.
+
+## 필수 사항
+
+### 1. Context7 Library IDs
+- **Next.js**: `/vercel/next.js` (Trust Score: 10)
+  - 특정 버전: `/vercel/next.js/v15.1.8` (최신), `/vercel/next.js/v14.3.0-canary.87`
+- **shadcn/ui**: `/shadcn-ui/ui` (Trust Score: 10)
+  - 특정 버전: `/shadcn-ui/ui/shadcn@2.9.0`, `/shadcn-ui/ui/shadcn-ui@0.9.0`
+
+### 2. 작업 전 필수 확인 사항
+
+#### Next.js 작업 시
+```typescript
+// 다음과 같은 작업을 수행하기 전에 Context7 MCP로 확인:
+// 1. App Router 관련 기능 구현
+// 2. Server Actions 작성
+// 3. Server/Client Components 구분
+// 4. Data Fetching (fetch, useRouter, etc.)
+// 5. Metadata API 사용
+// 6. Route Handlers 구현
+```
+
+**확인 방법**:
+1. `mcp_context7_get-library-docs` 도구 사용
+2. `context7CompatibleLibraryID`: `/vercel/next.js` 또는 `/vercel/next.js/v15.1.8`
+3. `topic`: 구체적인 주제 (예: "App Router", "Server Actions", "routing")
+4. `tokens`: 5000 (기본값) 또는 필요에 따라 조정
+
+#### shadcn/ui 작업 시
+```typescript
+// 다음과 같은 작업을 수행하기 전에 Context7 MCP로 확인:
+// 1. 새로운 UI 컴포넌트 추가
+// 2. 컴포넌트 커스터마이징
+// 3. 테마 설정 및 변경
+// 4. Form 컴포넌트 사용
+// 5. Dialog, Sheet, Popover 등 오버레이 컴포넌트
+```
+
+**확인 방법**:
+1. `mcp_context7_get-library-docs` 도구 사용
+2. `context7CompatibleLibraryID`: `/shadcn-ui/ui`
+3. `topic`: 구체적인 컴포넌트 또는 기능 (예: "button", "form", "dialog")
+
+### 3. 실전 사용 예시
+
+#### 예시 1: Next.js App Router 페이지 생성
+```typescript
+// 1단계: Context7에서 최신 App Router 패턴 확인
+// mcp_context7_get-library-docs
+// - context7CompatibleLibraryID: "/vercel/next.js"
+// - topic: "App Router page component"
+
+// 2단계: 확인한 패턴으로 구현
+export default async function Page() {
+  // Server Component로 구현
+  const data = await fetch('...')
+  return <div>...</div>
+}
+```
+
+#### 예시 2: shadcn/ui 컴포넌트 추가
+```typescript
+// 1단계: Context7에서 컴포넌트 사용법 확인
+// mcp_context7_get-library-docs
+// - context7CompatibleLibraryID: "/shadcn-ui/ui"
+// - topic: "dialog component"
+
+// 2단계: 확인한 방법으로 설치 및 사용
+// npx shadcn@latest add dialog
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+```
+
+#### 예시 3: Server Actions 구현
+```typescript
+// 1단계: Context7에서 Server Actions 패턴 확인
+// mcp_context7_get-library-docs
+// - context7CompatibleLibraryID: "/vercel/next.js/v15.1.8"
+// - topic: "Server Actions"
+// - tokens: 7000
+
+// 2단계: 최신 패턴으로 구현
+'use server'
+
+export async function createProduct(formData: FormData) {
+  // 서버 액션 로직
+}
+```
+
+### 4. 언제 Context7 MCP를 사용해야 하는가?
+
+#### 필수 사용 상황 ✅
+- [ ] 새로운 Next.js 기능 구현 시작 전
+- [ ] shadcn/ui 새 컴포넌트 추가 전
+- [ ] 복잡한 라우팅 패턴 구현 전
+- [ ] 데이터 페칭 방식 결정 전
+- [ ] 메타데이터 API 사용 전
+- [ ] 폼 처리 및 검증 구현 전
+- [ ] 레이아웃 및 중첩 라우팅 구현 전
+
+#### 선택 사용 상황 ⚡
+- [ ] 기존 패턴과 다른 방식이 필요할 때
+- [ ] 에러가 발생하여 최신 해결책이 필요할 때
+- [ ] 성능 최적화 방법을 찾을 때
+- [ ] 타입스크립트 타입 정의가 불명확할 때
+
+### 5. 워크플로우
+
+```
+작업 요청 받음
+    ↓
+Next.js/shadcn 관련인가?
+    ↓ (YES)
+Context7 MCP로 최신 문서 확인
+    ↓
+확인한 패턴/방법 적용
+    ↓
+구현 완료
+    ↓
+테스트 및 검증
+```
+
+### 6. 주의사항
+
+⚠️ **절대 하지 말아야 할 것**:
+- 오래된 Stack Overflow 답변이나 블로그 글만 참고하여 구현
+- Context7 확인 없이 추측으로 구현
+- Next.js 12/13 패턴을 Next.js 15에 적용
+- shadcn/ui CLI 없이 수동으로 컴포넌트 복사
+
+✅ **반드시 해야 할 것**:
+- 새로운 기능 구현 전 Context7로 최신 문서 확인
+- 공식 패턴과 권장사항 따르기
+- TypeScript 타입을 정확하게 사용
+- 최신 버전의 API 사용
+
+### 7. 프로젝트 특화 설정
+
+현재 프로젝트 버전:
+- **Next.js**: 15.5.4
+- **React**: 19.1.0
+- **TypeScript**: 5.x
+- **Tailwind CSS**: v4 (PostCSS)
+
+이 버전들에 맞는 문서를 참고하세요. 특히 Next.js 15는 다음과 같은 주요 변경사항이 있습니다:
+- React 19 지원
+- 향상된 캐싱 전략
+- 개선된 Server Actions
+- Turbopack 안정화
+
+### 8. Context7 MCP 도구 사용 템플릿
+
+```typescript
+// 기본 사용
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "당신의 주제",
+  tokens: 5000
+})
+
+// 특정 버전 사용 (Next.js 15)
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/vercel/next.js/v15.1.8",
+  topic: "당신의 주제",
+  tokens: 5000
+})
+
+// shadcn/ui 사용
+mcp_context7_get-library-docs({
+  context7CompatibleLibraryID: "/shadcn-ui/ui",
+  topic: "컴포넌트명 또는 기능",
+  tokens: 5000
+})
+```
+
+## 결론
+
+Next.js와 shadcn/ui는 빠르게 발전하는 라이브러리입니다. Context7 MCP를 활용하여 **항상 최신 문서와 베스트 프랙티스를 확인**하고 작업하세요. 이를 통해:
+
+1. ✅ 최신 API와 패턴 사용
+2. ✅ 불필요한 디버깅 시간 절약
+3. ✅ 더 나은 성능과 개발자 경험
+4. ✅ 유지보수 가능한 코드 작성
+
+이 규칙을 준수하여 항상 최신 상태의 고품질 코드를 작성하세요!

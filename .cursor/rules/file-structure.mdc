@@ -1,0 +1,266 @@
+---
+alwaysApply: true
+---
+
+# 프로젝트 파일 구조
+
+이 문서는 키위마켓 프로젝트의 파일 구조와 각 디렉토리의 역할을 설명합니다.
+
+## 현재 파일 구조
+
+```
+kiwi/
+├── app/                    # Next.js App Router
+│   ├── layout.tsx         # 루트 레이아웃
+│   ├── page.tsx           # 홈 페이지
+│   ├── globals.css        # 전역 스타일
+│   └── favicon.ico
+├── components/            # React 컴포넌트
+│   └── ui/               # shadcn/ui 컴포넌트
+│       ├── button.tsx
+│       └── card.tsx
+├── lib/                   # 유틸리티 및 헬퍼 함수
+│   └── utils.ts
+├── docs/                  # 프로젝트 문서
+│   ├── PRD.md
+│   ├── 기획문서.md
+│   ├── 디자인가이드.md
+│   └── 페이지목록.md
+├── public/                # 정적 파일
+├── .cursor/              # Cursor 규칙
+│   └── rules/
+├── package.json
+├── tsconfig.json
+├── next.config.ts
+└── tailwind.config.ts
+```
+
+## 권장 파일 구조 (확장)
+
+프로젝트가 성장함에 따라 다음과 같은 구조를 권장합니다:
+
+```
+kiwi/
+├── app/                          # Next.js App Router
+│   ├── (auth)/                  # 인증 관련 라우트 그룹
+│   │   ├── login/
+│   │   │   ├── page.tsx
+│   │   │   └── actions.ts
+│   │   ├── signup/
+│   │   │   ├── page.tsx
+│   │   │   └── actions.ts
+│   │   └── layout.tsx
+│   ├── (main)/                  # 메인 라우트 그룹
+│   │   ├── products/
+│   │   │   ├── page.tsx         # 상품 목록
+│   │   │   ├── [id]/
+│   │   │   │   └── page.tsx     # 상품 상세
+│   │   │   └── loading.tsx
+│   │   ├── chat/
+│   │   │   ├── page.tsx         # 채팅방 목록
+│   │   │   └── [roomId]/
+│   │   │       └── page.tsx     # 채팅방 상세
+│   │   ├── mypage/
+│   │   │   ├── purchases/       # 구매 관리
+│   │   │   │   └── page.tsx
+│   │   │   └── sales/           # 판매 관리
+│   │   │       └── page.tsx
+│   │   └── layout.tsx
+│   ├── sell/                    # 상품 등록
+│   │   ├── page.tsx
+│   │   └── actions.ts
+│   ├── api/                     # API Routes
+│   │   └── route.ts
+│   ├── layout.tsx               # 루트 레이아웃
+│   ├── page.tsx                 # 홈 페이지
+│   ├── globals.css
+│   ├── not-found.tsx            # 404 페이지
+│   └── error.tsx                # 에러 페이지
+├── components/                   # React 컴포넌트
+│   ├── ui/                      # shadcn/ui 기본 컴포넌트
+│   │   ├── button.tsx
+│   │   ├── card.tsx
+│   │   ├── input.tsx
+│   │   ├── dialog.tsx
+│   │   └── ...
+│   ├── layout/                  # 레이아웃 컴포넌트
+│   │   ├── Header.tsx
+│   │   ├── Footer.tsx
+│   │   └── Navigation.tsx
+│   ├── products/                # 상품 관련 컴포넌트
+│   │   ├── ProductCard.tsx
+│   │   ├── ProductList.tsx
+│   │   ├── ProductDetail.tsx
+│   │   └── ImageCarousel.tsx
+│   ├── chat/                    # 채팅 관련 컴포넌트
+│   │   ├── ChatRoom.tsx
+│   │   ├── ChatMessage.tsx
+│   │   └── ChatInput.tsx
+│   ├── map/                     # 지도 관련 컴포넌트
+│   │   ├── GoogleMap.tsx
+│   │   ├── LocationSearchInput.tsx
+│   │   └── DeliveryMap.tsx
+│   └── shared/                  # 공통 컴포넌트
+│       ├── LoadingSpinner.tsx
+│       ├── ErrorMessage.tsx
+│       └── EmptyState.tsx
+├── lib/                         # 유틸리티 및 설정
+│   ├── supabase/
+│   │   ├── client.ts           # 클라이언트 Supabase
+│   │   ├── server.ts           # 서버 Supabase
+│   │   └── middleware.ts
+│   ├── utils.ts                 # 유틸리티 함수
+│   ├── geocoding.ts             # Geocoding 함수
+│   └── constants.ts             # 상수 정의
+├── types/                       # TypeScript 타입 정의
+│   ├── index.ts                 # 전역 타입
+│   ├── supabase.ts              # Supabase 생성 타입
+│   └── google-maps.ts           # Google Maps 타입
+├── hooks/                       # 커스텀 React Hooks
+│   ├── useAuth.ts
+│   ├── useProducts.ts
+│   └── useChat.ts
+├── actions/                     # Server Actions
+│   ├── auth.ts
+│   ├── products.ts
+│   ├── chat.ts
+│   └── transactions.ts
+├── docs/                        # 프로젝트 문서
+│   ├── PRD.md
+│   ├── 기획문서.md
+│   ├── 디자인가이드.md
+│   └── 페이지목록.md
+├── public/                      # 정적 파일
+│   ├── images/
+│   └── icons/
+├── .cursor/                     # Cursor 규칙
+│   └── rules/
+├── .env.local                   # 환경 변수 (Git 제외)
+├── .env.local.example           # 환경 변수 예제
+├── .gitignore
+├── package.json
+├── tsconfig.json
+├── next.config.ts
+├── tailwind.config.ts
+└── README.md
+```
+
+## 디렉토리별 설명
+
+### `/app` - Next.js App Router
+- **라우트 그룹 `(group-name)`**: URL에 영향을 주지 않고 라우트를 논리적으로 그룹화
+- **`layout.tsx`**: 공유 레이아웃 정의
+- **`page.tsx`**: 실제 페이지 컴포넌트
+- **`loading.tsx`**: 로딩 UI
+- **`error.tsx`**: 에러 처리 UI
+- **`not-found.tsx`**: 404 페이지
+- **`actions.ts`**: Server Actions
+
+### `/components`
+- **`/ui`**: shadcn/ui 기본 컴포넌트 (자동 생성)
+- **`/layout`**: 헤더, 푸터 등 레이아웃 컴포넌트
+- **`/products`**: 상품 관련 컴포넌트
+- **`/chat`**: 채팅 관련 컴포넌트
+- **`/map`**: 지도 관련 컴포넌트
+- **`/shared`**: 공통으로 사용되는 컴포넌트
+
+### `/lib`
+- 유틸리티 함수, 헬퍼, 설정 파일
+- Supabase 클라이언트 설정
+- 공통 로직
+
+### `/types`
+- TypeScript 타입 정의
+- 전역 인터페이스 및 타입
+
+### `/hooks`
+- 커스텀 React Hooks
+- 재사용 가능한 로직
+
+### `/actions`
+- Server Actions 정의
+- 데이터 변경 로직
+
+### `/public`
+- 정적 파일 (이미지, 아이콘 등)
+- 직접 URL로 접근 가능
+
+## 파일 명명 규칙
+
+### 컴포넌트
+```tsx
+// PascalCase for React components
+ProductCard.tsx
+ChatMessage.tsx
+GoogleMap.tsx
+```
+
+### 유틸리티/함수
+```tsx
+// camelCase for utilities and functions
+geocoding.ts
+utils.ts
+constants.ts
+```
+
+### Server Actions
+```tsx
+// actions.ts or named by domain
+actions.ts
+productActions.ts
+authActions.ts
+```
+
+### 타입 파일
+```tsx
+// kebab-case or domain name
+index.ts
+supabase.ts
+google-maps.ts
+```
+
+## 임포트 경로 규칙
+
+Path alias `@/*` 사용 ([tsconfig.json](mdc:tsconfig.json) 참고):
+
+```tsx
+// ✅ 좋은 예
+import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
+import type { Product } from '@/types'
+
+// ❌ 나쁜 예 (상대 경로)
+import { Button } from '../../../components/ui/button'
+```
+
+## 환경 변수 관리
+
+```bash
+# .env.local (Git에서 제외)
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=...
+```
+
+```bash
+# .env.local.example (Git에 포함)
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-key
+```
+
+## 페이지별 파일 위치
+
+[docs/페이지목록.md](mdc:docs/페이지목록.md)에 정의된 페이지들의 파일 위치:
+
+| 페이지 | 파일 경로 |
+|-------|----------|
+| 메인 페이지 | `app/page.tsx` |
+| 회원가입 | `app/(auth)/signup/page.tsx` |
+| 로그인 | `app/(auth)/login/page.tsx` |
+| 상품 목록 | `app/(main)/products/page.tsx` |
+| 상품 상세 | `app/(main)/products/[id]/page.tsx` |
+| 채팅 | `app/(main)/chat/page.tsx` |
+| 구매 관리 | `app/(main)/mypage/purchases/page.tsx` |
+| 판매 관리 | `app/(main)/mypage/sales/page.tsx` |
+| 상품 등록 | `app/sell/page.tsx` |

@@ -1,0 +1,312 @@
+---
+globs: **/*.ts,**/*.tsx
+description: TypeScript 코딩 표준 및 규칙
+---
+
+# TypeScript 코딩 표준
+
+이 프로젝트는 TypeScript 5를 사용하며, 엄격한 타입 체크를 활성화하고 있습니다.
+
+## tsconfig.json 설정
+
+현재 프로젝트는 다음 설정을 사용합니다 ([tsconfig.json](mdc:tsconfig.json) 참고):
+- `strict: true` - 모든 엄격한 타입 체크 옵션 활성화
+- `target: ES2017`
+- `module: esnext`
+- Path alias: `@/*` → 프로젝트 루트
+
+## 타입 안전성 원칙
+
+### 1. any 타입 사용 금지
+```tsx
+// ❌ 나쁜 예
+const data: any = await fetch('/api/products')
+
+// ✅ 좋은 예
+interface Product {
+  id: string
+  name: string
+  price: number
+}
+
+const data: Product[] = await fetch('/api/products').then(res => res.json())
+```
+
+### 2. 명시적 타입 정의
+```tsx
+// ✅ 함수 매개변수 및 반환 타입 명시
+async function fetchProduct(id: string): Promise<Product> {
+  const response = await fetch(`/api/products/${id}`)
+  return response.json()
+}
+
+// ✅ 컴포넌트 Props 타입 정의
+interface ProductCardProps {
+  product: Product
+  onSelect?: (id: string) => void
+}
+
+export function ProductCard({ product, onSelect }: ProductCardProps) {
+  return <div onClick={() => onSelect?.(product.id)}>{product.name}</div>
+}
+```
+
+### 3. Next.js 15 특수 타입
+
+#### Page Props
+```tsx
+// params는 Promise 타입입니다 (Next.js 15)
+interface PageProps {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function Page({ params, searchParams }: PageProps) {
+  const { id } = await params
+  const query = await searchParams
+  // ...
+}
+```
+
+#### Metadata
+```tsx
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: '키위마켓',
+  description: '지역 기반 중고 거래',
+}
+```
+
+#### Route Handlers
+```tsx
+// app/api/products/route.ts
+export async function GET(request: Request) {
+  // Request는 Web API Request 타입
+  const url = new URL(request.url)
+  const query = url.searchParams.get('q')
+  
+  // Response.json()을 사용하여 타입 안전한 응답
+  return Response.json({ data: [] })
+}
+
+export async function POST(request: Request) {
+  const body: CreateProductInput = await request.json()
+  return Response.json({ success: true })
+}
+```
+
+### 4. 유니온 타입과 타입 가드
+```tsx
+type Status = 'pending' | 'completed' | 'cancelled'
+
+interface Transaction {
+  id: string
+  status: Status
+}
+
+function handleTransaction(transaction: Transaction) {
+  switch (transaction.status) {
+    case 'pending':
+      // ...
+      break
+    case 'completed':
+      // ...
+      break
+    case 'cancelled':
+      // ...
+      break
+  }
+}
+```
+
+### 5. 옵셔널 체이닝과 널 병합 연산자
+```tsx
+// ✅ 안전한 프로퍼티 접근
+const userName = user?.profile?.name ?? '게스트'
+
+// ✅ 옵셔널 함수 호출
+onSelect?.(product.id)
+```
+
+## 타입 정의 파일 구조
+
+### 전역 타입
+```tsx
+// types/index.ts
+export interface User {
+  id: string
+  email: string
+  name: string
+  region: {
+    gu: string
+    dong: string
+  }
+}
+
+export interface Product {
+  id: string
+  title: string
+  price: number
+  description: string
+  images: string[]
+  location: {
+    gu: string
+    dong: string
+  }
+  sellerId: string
+  status: 'available' | 'reserved' | 'sold'
+  createdAt: string
+}
+
+export interface ChatMessage {
+  id: string
+  chatRoomId: string
+  senderId: string
+  content: string
+  createdAt: string
+}
+```
+
+### 컴포넌트별 타입
+```tsx
+// components/ProductCard.tsx
+interface ProductCardProps {
+  product: Product
+  onClick?: () => void
+  variant?: 'default' | 'compact'
+}
+
+export function ProductCard({ product, onClick, variant = 'default' }: ProductCardProps) {
+  // ...
+}
+```
+
+## React 19 + TypeScript
+
+### Server Component 타입
+```tsx
+// Server Component는 기본적으로 async 함수 가능
+export default async function Page() {
+  const data = await fetchData()
+  return <div>{data}</div>
+}
+```
+
+### Client Component 타입
+```tsx
+'use client'
+
+import { useState } from 'react'
+
+interface FormData {
+  title: string
+  price: number
+}
+
+export default function ProductForm() {
+  const [formData, setFormData] = useState<FormData>({
+    title: '',
+    price: 0,
+  })
+  
+  return <form>...</form>
+}
+```
+
+### Hooks 타입
+```tsx
+'use client'
+
+import { useState, useEffect } from 'react'
+
+export function useProductList() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<Error | null>(null)
+  
+  useEffect(() => {
+    // fetch logic
+  }, [])
+  
+  return { products, loading, error }
+}
+```
+
+## Supabase 타입
+
+Supabase를 사용할 때 타입 생성:
+
+```bash
+# Supabase CLI를 사용한 타입 생성
+npx supabase gen types typescript --project-id YOUR_PROJECT_ID > types/supabase.ts
+```
+
+```tsx
+// lib/supabase.ts
+import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/supabase'
+
+export const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+```
+
+## 환경 변수 타입
+
+```tsx
+// env.d.ts
+declare namespace NodeJS {
+  interface ProcessEnv {
+    NEXT_PUBLIC_SUPABASE_URL: string
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: string
+    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: string
+  }
+}
+```
+
+## 유틸리티 타입 활용
+
+```tsx
+// 일부 프로퍼티만 선택
+type ProductPreview = Pick<Product, 'id' | 'title' | 'price' | 'images'>
+
+// 일부 프로퍼티 제외
+type ProductWithoutId = Omit<Product, 'id'>
+
+// 모든 프로퍼티를 옵셔널로
+type PartialProduct = Partial<Product>
+
+// 모든 프로퍼티를 필수로
+type RequiredProduct = Required<Product>
+
+// 읽기 전용
+type ReadonlyProduct = Readonly<Product>
+```
+
+## 에러 처리 타입
+
+```tsx
+type Result<T, E = Error> = 
+  | { success: true; data: T }
+  | { success: false; error: E }
+
+async function fetchProduct(id: string): Promise<Result<Product>> {
+  try {
+    const response = await fetch(`/api/products/${id}`)
+    const data = await response.json()
+    return { success: true, data }
+  } catch (error) {
+    return { success: false, error: error as Error }
+  }
+}
+
+// 사용
+const result = await fetchProduct('123')
+if (result.success) {
+  console.log(result.data) // Product 타입
+} else {
+  console.error(result.error) // Error 타입
+}
+```
