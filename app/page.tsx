@@ -20,7 +20,7 @@ export default function Home() {
       title: "아이폰 14 Pro",
       price: 850000,
       location: "강남구",
-      image: "https://placehold.co/400x300?text=Product+1",
+      image: "https://via.placeholder.com/400x300/3DD598/ffffff?text=Product+1",
       status: "available",
     },
     {
@@ -28,7 +28,7 @@ export default function Home() {
       title: "맥북 에어 M2",
       price: 1200000,
       location: "서초구",
-      image: "https://placehold.co/400x300?text=Product+2",
+      image: "https://via.placeholder.com/400x300/FF8A00/ffffff?text=Product+2",
       status: "available",
     },
     {
@@ -36,7 +36,7 @@ export default function Home() {
       title: "에어팟 프로 2세대",
       price: 180000,
       location: "송파구",
-      image: "https://placehold.co/400x300?text=Product+3",
+      image: "https://via.placeholder.com/400x300/3DD598/ffffff?text=Product+3",
       status: "reserved",
     },
   ];
