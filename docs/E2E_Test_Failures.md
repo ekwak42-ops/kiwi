@@ -5,10 +5,10 @@
 
 ---
 
-## 1. 회원가입 제출 시 서버 에러 500 발생
+## 1. ✅ 회원가입 제출 시 서버 에러 500 발생 [해결 완료]
 
 ### 심각도
-🔴 **긴급 (Critical)**
+🟢 **해결 완료 (2025-09-30)**
 
 ### 증상
 회원가입 폼에 유효한 정보를 입력하고 제출 시 서버 에러 발생
@@ -23,39 +23,51 @@
    - 우리 동네: `서울시 강남구 역삼동`
 3. "회원가입" 버튼 클릭
 
-### 실제 결과
-```
-Application error: a server-side exception has occurred while loading kiwi-azure.vercel.app
-Digest: 3854580824
+### 문제 원인
+Server Action (`actions/auth.ts`)에서 `throw new Error()`를 사용하여 에러를 던지면 Next.js가 이를 500 에러로 처리함
+
+### 해결 방법
+1. Server Action에서 `throw Error` 대신 `return { error: string }` 형태로 에러 객체 반환
+2. Client Component에서 반환된 에러를 받아 UI에 표시
+3. `useTransition` hook을 사용하여 비동기 처리 상태 관리
+
+### 적용된 코드 변경사항
+
+**actions/auth.ts**
+```typescript
+// ❌ 이전 (문제 있는 코드)
+export async function signUp(formData: FormData): Promise<void> {
+  if (authError) {
+    throw new Error(authError.message) // 500 에러 발생
+  }
+  redirect('/')
+}
+
+// ✅ 수정 후
+export async function signUp(formData: FormData): Promise<ActionResult> {
+  if (authError) {
+    return { error: authError.message } // 에러 객체 반환
+  }
+  redirect('/')
+}
 ```
 
-### 기대 결과
-- 회원가입 성공
-- 로그인 페이지 또는 메인 페이지로 리다이렉트
-
-### 에러 로그
-```
-[ERROR] Failed to load resource: the server responded with a status of 500 ()
-An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.
-```
+**app/(auth)/signup/page.tsx**
+- Client Component로 변경 (`'use client'`)
+- `useTransition`으로 비동기 처리
+- 반환된 에러를 state로 관리하여 UI에 표시
 
 ### 영향
-- 이메일/비밀번호 기반 회원가입 불가능
-- 신규 사용자 유입 차단
-- Google OAuth만 사용 가능
-
-### 추천 해결 방법
-1. 서버 로그 확인 (`Digest: 3854580824`)
-2. 회원가입 Server Action 디버깅
-3. Supabase 연동 확인
-4. 에러 핸들링 개선
+✅ 이메일/비밀번호 기반 회원가입 정상 작동
+✅ 서버 에러 없이 안정적으로 동작
+✅ 사용자 친화적인 에러 메시지 표시
 
 ---
 
-## 2. 클라이언트 측 유효성 검사 미구현
+## 2. ✅ 클라이언트 측 유효성 검사 미구현 [해결 완료]
 
 ### 심각도
-🟡 **높음 (High)**
+🟢 **해결 완료 (2025-09-30)**
 
 ### 증상
 잘못된 이메일 형식이나 짧은 비밀번호를 입력해도 클라이언트에서 유효성 검사가 실행되지 않음
@@ -67,45 +79,60 @@ An error occurred in the Server Components render. The specific message is omitt
    - 비밀번호: `test123` (8자 미만)
 3. "회원가입" 버튼 클릭
 
-### 실제 결과
-- 에러 메시지 없음
-- 폼 제출 시도 없음 (페이지가 그대로 유지됨)
-- 사용자 피드백 없음
+### 문제 원인
+- HTML5 기본 유효성 검사만 사용 (`required` 속성)
+- 프론트엔드에서 상세한 유효성 검사 로직 없음
+- 사용자 피드백 메시지 없음
 
-### 기대 결과
-- 이메일 형식 오류 메시지 표시: "올바른 이메일 형식을 입력해주세요"
-- 비밀번호 길이 오류 메시지 표시: "비밀번호는 최소 8자 이상이어야 합니다"
-- 입력 필드에 빨간색 테두리 표시
+### 해결 방법
+1. **React Hook Form** 설치 및 적용
+2. **Zod** 스키마를 사용한 타입 안전한 유효성 검사
+3. **@hookform/resolvers** 사용
+4. 실시간 에러 메시지 표시
 
-### 영향
-- 사용자 경험 저하
-- 사용자가 무엇이 잘못되었는지 알 수 없음
-- 불필요한 서버 요청 발생 가능
+### 적용된 Zod 스키마
 
-### 추천 해결 방법
-1. React Hook Form + Zod 스키마 유효성 검사 구현
-2. 각 입력 필드에 실시간 유효성 검사 추가
-3. 에러 메시지 UI 컴포넌트 구현
-4. 버튼 활성화/비활성화 로직 추가
-
-### 예시 코드
 ```typescript
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-
 const signupSchema = z.object({
-  email: z.string().email('올바른 이메일 형식을 입력해주세요'),
-  password: z.string().min(8, '비밀번호는 최소 8자 이상이어야 합니다'),
-  name: z.string().min(2, '이름을 입력해주세요'),
-  phone: z.string().regex(/^010-\d{4}-\d{4}$/, '올바른 전화번호 형식을 입력해주세요'),
-  location: z.string().min(3, '지역을 입력해주세요'),
-})
-
-const { register, handleSubmit, formState: { errors } } = useForm({
-  resolver: zodResolver(signupSchema),
+  email: z
+    .string()
+    .min(1, '이메일을 입력해주세요')
+    .email('올바른 이메일 형식을 입력해주세요'),
+  password: z
+    .string()
+    .min(8, '비밀번호는 최소 8자 이상이어야 합니다')
+    .regex(/[a-zA-Z]/, '비밀번호에는 영문자가 포함되어야 합니다'),
+  name: z.string().min(2, '이름은 최소 2자 이상이어야 합니다'),
+  phone: z
+    .string()
+    .regex(/^010-\d{4}-\d{4}$/, '올바른 전화번호 형식을 입력해주세요 (예: 010-1234-5678)'),
+  address: z.string().min(3, '지역을 입력해주세요'),
 })
 ```
+
+### 로그인 페이지 유효성 검사
+
+```typescript
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, '이메일을 입력해주세요')
+    .email('올바른 이메일 형식을 입력해주세요'),
+  password: z.string().min(1, '비밀번호를 입력해주세요'),
+})
+```
+
+### 구현된 기능
+✅ 실시간 입력 필드 유효성 검사
+✅ 각 필드별 에러 메시지 표시
+✅ 잘못된 입력 필드에 빨간색 테두리 표시
+✅ 서버 에러 메시지 표시
+✅ 제출 중 버튼 비활성화 및 로딩 표시
+
+### 영향
+✅ 사용자 경험 대폭 개선
+✅ 불필요한 서버 요청 방지
+✅ 명확한 에러 피드백 제공
 
 ---
 
@@ -168,19 +195,28 @@ const { register, handleSubmit, formState: { errors } } = useForm({
 
 ## 권장 사항
 
-### 즉시 수정 필요
-1. ✅ 회원가입 서버 에러 수정 (최우선)
-2. ✅ 클라이언트 유효성 검사 구현
+### ✅ 수정 완료 (2025-09-30)
+1. ✅ **회원가입 서버 에러 수정** (최우선)
+   - Server Action 에러 핸들링 개선
+   - Client Component로 변경 및 에러 표시
+2. ✅ **클라이언트 유효성 검사 구현**
+   - React Hook Form + Zod 적용
+   - 회원가입/로그인 페이지 모두 적용
+3. ✅ **실시간 사용자 피드백**
+   - 입력 필드별 에러 메시지
+   - 서버 에러 메시지 표시
+   - 제출 중 로딩 상태
 
 ### 단기 수정 목표
-3. ✅ Google Maps 기능 완성
-4. ✅ 콘솔 에러 원인 분석 및 수정
+3. ⏳ Google Maps 기능 완성 (다음 우선순위)
+4. ⏳ 콘솔 에러 원인 분석 및 수정
 
 ### 장기 개선 목표
 5. 커스텀 404 페이지 디자인
 6. 에러 바운더리 구현
 7. 로그인 상태 테스트 자동화
 8. E2E 테스트 자동화 (Playwright Test)
+9. 이미지 최적화 (next/image 사용)
 
 ---
 
