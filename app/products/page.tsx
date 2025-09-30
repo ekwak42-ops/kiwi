@@ -6,11 +6,17 @@ import type { Tables } from '@/types/supabase'
 
 type Product = Tables<'products'>
 
-export default async function ProductsPage() {
-  const supabase = await createClient()
+interface ProductsPageProps {
+  searchParams: Promise<{ q?: string }>
+}
 
-  // 상품 목록 조회 (판매 가능한 상품만)
-  const { data: products, error } = await supabase
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  const supabase = await createClient()
+  const params = await searchParams
+  const searchQuery = params.q?.trim()
+
+  // 상품 목록 조회
+  let query = supabase
     .from('products')
     .select(`
       *,
@@ -21,7 +27,13 @@ export default async function ProductsPage() {
       )
     `)
     .eq('status', 'available')
-    .order('created_at', { ascending: false })
+
+  // 검색어가 있으면 필터링
+  if (searchQuery) {
+    query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`)
+  }
+
+  const { data: products, error } = await query.order('created_at', { ascending: false })
 
   if (error) {
     console.error('상품 조회 오류:', error)
@@ -39,9 +51,14 @@ export default async function ProductsPage() {
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">상품 목록</h1>
+          <h1 className="text-3xl font-bold">
+            {searchQuery ? `"${searchQuery}" 검색 결과` : '상품 목록'}
+          </h1>
           <p className="text-muted-foreground mt-1">
-            지역 기반 중고 거래 상품들을 둘러보세요
+            {searchQuery 
+              ? `"${searchQuery}"에 대한 검색 결과입니다`
+              : '지역 기반 중고 거래 상품들을 둘러보세요'
+            }
           </p>
         </div>
         <Link
@@ -55,10 +72,10 @@ export default async function ProductsPage() {
       {!products || products.length === 0 ? (
         <div className="text-center py-16">
           <h2 className="text-2xl font-semibold text-muted-foreground">
-            등록된 상품이 없습니다
+            {searchQuery ? '검색 결과가 없습니다' : '등록된 상품이 없습니다'}
           </h2>
           <p className="text-muted-foreground mt-2">
-            첫 번째 상품을 등록해보세요!
+            {searchQuery ? '다른 검색어로 시도해보세요.' : '첫 번째 상품을 등록해보세요!'}
           </p>
           <Link
             href="/sell"

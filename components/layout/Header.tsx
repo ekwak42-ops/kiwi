@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState, FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -17,13 +19,24 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 export function Header() {
+  const router = useRouter()
   const { user, isAuthenticated, loading } = useAuth()
+  const [searchQuery, setSearchQuery] = useState('')
 
   const handleLogout = async () => {
     try {
       await signOut()
     } catch (error) {
       console.error('로그아웃 실패:', error)
+    }
+  }
+
+  const handleSearch = (e: FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`)
+    } else {
+      router.push('/products')
     }
   }
 
@@ -47,16 +60,18 @@ export function Header() {
           </button>
 
           {/* 검색창 */}
-          <div className="flex-1 max-w-md hidden md:flex">
+          <form onSubmit={handleSearch} className="flex-1 max-w-md hidden md:flex">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="상품 검색"
                 className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-          </div>
+          </form>
 
           {/* 판매하기 버튼 */}
           <Link href="/sell">
@@ -178,16 +193,18 @@ export function Header() {
         </div>
 
         {/* 모바일 검색창 */}
-        <div className="mt-4 md:hidden">
+        <form onSubmit={handleSearch} className="mt-4 md:hidden">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="상품 검색"
               className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>
+        </form>
       </div>
     </header>
   )
