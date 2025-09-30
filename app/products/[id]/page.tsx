@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { StartChatButton } from '@/components/products/StartChatButton'
+import { GoogleMap } from '@/components/map/GoogleMap'
+import { getRegionCoordinates } from '@/lib/geocoding'
 import Link from 'next/link'
 
 interface ProductPageProps {
@@ -39,6 +41,12 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { data: { user } } = await supabase.auth.getUser()
   const isOwner = user?.id === product.seller_id
   const isSold = product.status === 'sold'
+
+  // 거래 위치 좌표 가져오기
+  const locationCoords = await getRegionCoordinates(
+    product.location_gu,
+    product.location_dong
+  )
 
   return (
     <div className="container mx-auto py-8">
@@ -126,8 +134,8 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
             {/* 거래 위치 */}
             <div>
-              <h2 className="text-lg font-semibold mb-2">거래 위치</h2>
-              <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold mb-3">거래 위치</h2>
+              <div className="flex items-center gap-2 mb-4">
                 <svg
                   className="w-5 h-5 text-muted-foreground"
                   fill="none"
@@ -151,8 +159,23 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                   {product.location_gu} {product.location_dong}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                지도 기능은 곧 추가됩니다.
+              
+              {/* Google Maps */}
+              <div className="h-64 rounded-lg overflow-hidden border">
+                <GoogleMap
+                  center={locationCoords}
+                  zoom={14}
+                  markers={[
+                    {
+                      ...locationCoords,
+                      label: product.location_dong,
+                    },
+                  ]}
+                />
+              </div>
+              
+              <p className="text-xs text-muted-foreground mt-2">
+                * 개인정보 보호를 위해 대략적인 위치만 표시됩니다.
               </p>
             </div>
 
