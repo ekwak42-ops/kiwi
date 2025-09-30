@@ -1,0 +1,218 @@
+---
+alwaysApply: true
+---
+
+# 환경 변수 관리 규칙
+
+키위마켓 프로젝트에서 사용하는 환경 변수와 관리 방법을 정의합니다.
+
+## 환경 변수 파일
+
+### `.env.local` (Git 제외, 실제 사용)
+실제 API 키와 비밀 정보가 담긴 파일입니다. 절대 Git에 커밋하지 마세요.
+
+```bash
+# Supabase 환경 변수 설정
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Google Maps API 설정
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+```
+
+### `.env.example` (Git 포함, 템플릿)
+환경 변수 템플릿 파일입니다. 실제 값은 비우고 예시만 제공합니다.
+
+이 파일은 새로운 개발자가 프로젝트를 시작할 때 참고용으로 사용됩니다.
+
+## 환경 변수 목록
+
+### Supabase
+
+#### `NEXT_PUBLIC_SUPABASE_URL` (필수)
+- **설명**: Supabase 프로젝트 URL
+- **형식**: `https://your-project-id.supabase.co`
+- **노출**: 클라이언트에 노출됨 (`NEXT_PUBLIC_*`)
+- **사용 위치**: 클라이언트, 서버 모두
+
+#### `NEXT_PUBLIC_SUPABASE_ANON_KEY` (필수)
+- **설명**: Supabase Anon/Public Key
+- **형식**: JWT 토큰 문자열
+- **노출**: 클라이언트에 노출됨 (`NEXT_PUBLIC_*`)
+- **사용 위치**: 클라이언트, 서버 모두
+- **보안**: RLS(Row Level Security)로 보호됨
+
+#### `SUPABASE_SERVICE_ROLE_KEY` (선택)
+- **설명**: Supabase Service Role Key (관리자 권한)
+- **형식**: JWT 토큰 문자열
+- **노출**: 서버 전용, 클라이언트 노출 금지!
+- **사용 위치**: 서버 사이드 전용
+- **보안**: ⚠️ RLS를 우회하므로 매우 신중하게 사용
+- **사용 예시**: 관리자 작업, 백업, 마이그레이션 등
+
+### Google Maps
+
+#### `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (필수)
+- **설명**: Google Maps JavaScript API 키
+- **형식**: 문자열 (예: `AIzaSy...`)
+- **노출**: 클라이언트에 노출됨 (`NEXT_PUBLIC_*`)
+- **사용 위치**: 클라이언트 (지도 표시, Geocoding 등)
+- **보안**: API 키 제한 설정 필요 (HTTP 리퍼러)
+
+## 환경 변수 사용 방법
+
+### 클라이언트 컴포넌트에서
+```tsx
+'use client'
+
+export function MyComponent() {
+  // ✅ NEXT_PUBLIC_* 변수만 사용 가능
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  
+  // ❌ 서버 전용 변수는 undefined
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY // undefined!
+  
+  return <div>...</div>
+}
+```
+
+### 서버 컴포넌트에서
+```tsx
+// ✅ 모든 환경 변수 사용 가능
+export default async function ServerComponent() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  return <div>...</div>
+}
+```
+
+### Server Actions에서
+```tsx
+'use server'
+
+export async function myAction() {
+  // ✅ 모든 환경 변수 사용 가능
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  // 관리자 작업 수행
+}
+```
+
+## 보안 규칙
+
+### 1. Git 관리
+```gitignore
+# .gitignore에 반드시 포함
+.env.local
+.env*.local
+```
+
+### 2. 환경 변수 네이밍
+- **클라이언트 노출 OK**: `NEXT_PUBLIC_*` 접두사 사용
+- **서버 전용**: `NEXT_PUBLIC_` 없이 사용
+
+### 3. API 키 보호
+
+#### Supabase ANON KEY
+- RLS 정책으로 보호됨
+- 클라이언트 노출 가능
+- 모든 테이블에 RLS 활성화 필수
+
+#### Supabase SERVICE ROLE KEY
+- 절대 클라이언트에서 사용 금지
+- 서버 사이드에서만 사용
+- Git에 커밋하지 않음
+
+#### Google Maps API KEY
+- HTTP 리퍼러 제한 설정
+- Google Cloud Console에서 제한 설정:
+  - 개발: `localhost:3000/*`
+  - 프로덕션: `your-domain.com/*`
+
+### 4. 환경 변수 검증
+```tsx
+// lib/env.ts
+export function validateEnv() {
+  const required = [
+    'NEXT_PUBLIC_SUPABASE_URL',
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
+  ]
+  
+  for (const key of required) {
+    if (!process.env[key]) {
+      throw new Error(`Missing required environment variable: ${key}`)
+    }
+  }
+}
+```
+
+## 새 프로젝트 설정 가이드
+
+### 1. 파일 복사
+```bash
+cp .env.example .env.local
+```
+
+### 2. 실제 값 입력
+`.env.local` 파일을 열고 실제 API 키를 입력하세요.
+
+### 3. Supabase 설정
+1. [Supabase Dashboard](https://supabase.com/dashboard) 접속
+2. 프로젝트 생성
+3. Settings > API에서 URL과 키 확인
+4. `.env.local`에 입력
+
+### 4. Google Maps 설정
+1. [Google Cloud Console](https://console.cloud.google.com/) 접속
+2. 프로젝트 생성
+3. Maps JavaScript API 활성화
+4. API 키 생성
+5. API 키 제한 설정
+6. `.env.local`에 입력
+
+### 5. 검증
+```bash
+npm run dev
+```
+개발 서버를 실행하여 환경 변수가 제대로 로드되는지 확인하세요.
+
+## Vercel 배포 시 설정
+
+Vercel 대시보드에서 다음 환경 변수를 설정하세요:
+
+1. Project Settings > Environment Variables
+2. 다음 변수 추가:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (필요시)
+   - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+3. Environment: Production, Preview, Development 선택
+4. Deploy
+
+## 주의사항
+
+1. ⚠️ `.env.local` 절대 Git에 커밋하지 않기
+2. ⚠️ `SUPABASE_SERVICE_ROLE_KEY` 클라이언트에서 사용하지 않기
+3. ⚠️ API 키는 항상 제한 설정 적용하기
+4. ⚠️ 환경 변수 변경 후 개발 서버 재시작하기
+5. ⚠️ 프로덕션과 개발 환경의 키는 별도로 관리하기
+
+## 트러블슈팅
+
+### 환경 변수가 undefined로 나올 때
+1. 파일명 확인: `.env.local` (`.env.local.txt` 아님)
+2. 위치 확인: 프로젝트 루트 디렉토리
+3. 개발 서버 재시작: `npm run dev` 재실행
+4. 변수명 확인: `NEXT_PUBLIC_*` 접두사 확인
+
+### 클라이언트에서 서버 변수가 undefined
+- 정상입니다. `NEXT_PUBLIC_` 접두사가 없는 변수는 서버 전용입니다.
+
+### Vercel 배포 후 환경 변수 오류
+1. Vercel 대시보드에서 환경 변수 확인
+2. Redeploy 실행
