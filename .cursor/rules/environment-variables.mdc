@@ -23,6 +23,9 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 # Pinecone API 설정
 PINECONE_API_KEY=your-pinecone-api-key
 PINECONE_HOST=your-pinecone-host
+
+# Gemini AI API 설정
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
 ### `.env.example` (Git 포함, 템플릿)
@@ -80,6 +83,17 @@ PINECONE_HOST=your-pinecone-host
 - **노출**: 서버 전용, 클라이언트 노출 금지!
 - **사용 위치**: 서버 사이드 전용
 - **보안**: ⚠️ 절대 클라이언트에 노출하지 않기
+
+### Gemini AI
+
+#### `GEMINI_API_KEY` (필수)
+- **설명**: Google Gemini AI API 키
+- **형식**: 문자열 (API 키)
+- **노출**: 서버 전용, 클라이언트 노출 금지!
+- **사용 위치**: 서버 사이드 전용
+- **보안**: ⚠️ 절대 클라이언트에 노출하지 않기
+- **사용 예시**: AI 텍스트 생성, 이미지 분석, 채팅봇 등
+- **발급**: [Google AI Studio](https://aistudio.google.com/app/apikey)
 
 ## 환경 변수 사용 방법
 
@@ -160,6 +174,13 @@ export async function myAction() {
 - Git에 커밋하지 않음
 - API 키는 Pinecone 대시보드에서 확인
 
+#### Gemini API KEY
+- 절대 클라이언트에서 사용 금지
+- 서버 사이드에서만 사용
+- Git에 커밋하지 않음
+- API 키는 [Google AI Studio](https://aistudio.google.com/app/apikey)에서 발급
+- 무료 할당량 있음 (분당 15회, 일일 1,500회)
+
 ### 4. 환경 변수 검증
 ```tsx
 // lib/env.ts
@@ -168,6 +189,7 @@ export function validateEnv() {
     'NEXT_PUBLIC_SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_ANON_KEY',
     'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
+    'GEMINI_API_KEY',
   ]
   
   for (const key of required) {
@@ -210,7 +232,14 @@ cp .env.example .env.local
 5. 인덱스 Host 주소 확인
 6. `.env.local`에 입력
 
-### 6. 검증
+### 6. Gemini AI 설정
+1. [Google AI Studio](https://aistudio.google.com/app/apikey) 접속
+2. Google 계정으로 로그인
+3. 'Get API key' 클릭
+4. API 키 생성
+5. `.env.local`에 입력
+
+### 7. 검증
 ```bash
 npm run dev
 ```
@@ -228,6 +257,7 @@ Vercel 대시보드에서 다음 환경 변수를 설정하세요:
    - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
    - `PINECONE_API_KEY`
    - `PINECONE_HOST`
+   - `GEMINI_API_KEY`
 3. Environment: Production, Preview, Development 선택
 4. Deploy
 
