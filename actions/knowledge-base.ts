@@ -220,13 +220,30 @@ export async function listEntries(query?: string, topK: number = 100): Promise<L
         includeMetadata: true,
       })
 
-      const data = results.matches.map((match) => ({
-        id: match.id,
-        question: (match.metadata?.question as string) || '',
-        answer: (match.metadata?.answer as string) || '',
-        createdAt: (match.metadata?.createdAt as string) || '',
-        metadata: match.metadata,
-      }))
+      const data = results.matches.map((match) => {
+        const question = (match.metadata?.question as string) || ''
+        const answer = (match.metadata?.answer as string) || ''
+        const content = (match.metadata?.content as string) || ''
+        
+        // TXT 파일인 경우 content를 답변으로 사용
+        if (content && !question && !answer) {
+          return {
+            id: match.id,
+            question: '텍스트 청크',
+            answer: content,
+            createdAt: (match.metadata?.createdAt as string) || '',
+            metadata: match.metadata,
+          }
+        }
+        
+        return {
+          id: match.id,
+          question,
+          answer,
+          createdAt: (match.metadata?.createdAt as string) || '',
+          metadata: match.metadata,
+        }
+      })
 
       return { success: true, data }
     } else {
