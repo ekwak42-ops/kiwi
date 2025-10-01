@@ -2,9 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import Link from 'next/link'
-import type { Tables } from '@/types/supabase'
-
-type Product = Tables<'products'>
 
 interface ProductsPageProps {
   searchParams: Promise<{ q?: string }>
