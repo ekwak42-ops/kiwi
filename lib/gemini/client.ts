@@ -47,7 +47,7 @@ ${question}
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-001',
+      model: 'gemini-flash-latest',
       contents: prompt,
       config: {
         maxOutputTokens: 500,
@@ -95,7 +95,7 @@ ${question}
 
   try {
     const response = await ai.models.generateContentStream({
-      model: 'gemini-2.0-flash-001',
+      model: 'gemini-flash-latest',
       contents: prompt,
       config: {
         maxOutputTokens: 500,
