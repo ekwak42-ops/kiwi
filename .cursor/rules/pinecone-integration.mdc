@@ -1,0 +1,287 @@
+---
+description: Pinecone 벡터 데이터베이스 통합 규칙
+---
+
+# Pinecone 통합 규칙
+
+Pinecone 벡터 데이터베이스와의 통합 방법을 정의합니다.
+
+## 개요
+
+Pinecone은 벡터 데이터베이스로, 상품 검색, 추천 시스템 등에 사용됩니다.
+
+## 환경 변수
+
+⚠️ **주의**: Pinecone API 키와 호스트는 이미 `.env.local`에 설정되어 있습니다.
+
+```bash
+# 서버 전용 - 절대 클라이언트에서 사용하지 마세요
+PINECONE_API_KEY=your-pinecone-api-key
+PINECONE_HOST=your-pinecone-host
+```
+
+## 설치
+
+```bash
+npm install @pinecone-database/pinecone
+```
+
+## 사용 방법
+
+### 1. Pinecone 클라이언트 생성
+
+```typescript
+// lib/pinecone/client.ts
+import { Pinecone } from '@pinecone-database/pinecone'
+
+// 서버 사이드에서만 사용
+export function createPineconeClient() {
+  const apiKey = process.env.PINECONE_API_KEY
+  const host = process.env.PINECONE_HOST
+
+  if (!apiKey || !host) {
+    throw new Error('Pinecone API key or host is not configured')
+  }
+
+  return new Pinecone({
+    apiKey,
+  })
+}
+
+// 인덱스 가져오기
+export async function getIndex(indexName: string) {
+  const client = createPineconeClient()
+  return client.index(indexName)
+}
+```
+
+### 2. 벡터 삽입 (Upsert)
+
+```typescript
+// actions/pinecone.ts
+'use server'
+
+import { getIndex } from '@/lib/pinecone/client'
+
+export async function upsertVector(
+  indexName: string,
+  id: string,
+  values: number[],
+  metadata?: Record<string, any>
+) {
+  const index = await getIndex(indexName)
+  
+  await index.upsert([
+    {
+      id,
+      values,
+      metadata,
+    },
+  ])
+}
+```
+
+### 3. 벡터 검색 (Query)
+
+```typescript
+// actions/pinecone.ts
+'use server'
+
+import { getIndex } from '@/lib/pinecone/client'
+
+export async function queryVectors(
+  indexName: string,
+  queryVector: number[],
+  topK: number = 10,
+  filter?: Record<string, any>
+) {
+  const index = await getIndex(indexName)
+  
+  const results = await index.query({
+    vector: queryVector,
+    topK,
+    includeMetadata: true,
+    filter,
+  })
+  
+  return results.matches
+}
+```
+
+### 4. 벡터 삭제
+
+```typescript
+// actions/pinecone.ts
+'use server'
+
+import { getIndex } from '@/lib/pinecone/client'
+
+export async function deleteVector(indexName: string, id: string) {
+  const index = await getIndex(indexName)
+  await index.deleteOne(id)
+}
+
+export async function deleteVectors(indexName: string, ids: string[]) {
+  const index = await getIndex(indexName)
+  await index.deleteMany(ids)
+}
+```
+
+## 실제 사용 예시
+
+### 상품 검색 구현
+
+```typescript
+// actions/products.ts
+'use server'
+
+import { queryVectors } from './pinecone'
+import { createClient } from '@/lib/supabase/server'
+
+export async function searchProducts(query: string) {
+  // 1. 쿼리를 임베딩으로 변환 (OpenAI, Cohere 등 사용)
+  const queryEmbedding = await generateEmbedding(query)
+  
+  // 2. Pinecone에서 유사한 벡터 검색
+  const results = await queryVectors(
+    'products',
+    queryEmbedding,
+    20
+  )
+  
+  // 3. 상품 ID로 Supabase에서 상세 정보 조회
+  const productIds = results.map((r) => r.id)
+  const supabase = await createClient()
+  
+  const { data: products } = await supabase
+    .from('products')
+    .select('*')
+    .in('id', productIds)
+  
+  return products
+}
+
+async function generateEmbedding(text: string): Promise<number[]> {
+  // OpenAI, Cohere 등의 임베딩 API 사용
+  // 예시만 제공 - 실제 구현 필요
+  throw new Error('Implement embedding generation')
+}
+```
+
+### 상품 등록 시 벡터 저장
+
+```typescript
+// actions/products.ts
+'use server'
+
+import { upsertVector } from './pinecone'
+
+export async function createProduct(formData: FormData) {
+  // 1. Supabase에 상품 저장
+  const product = await saveProductToSupabase(formData)
+  
+  // 2. 상품 설명을 임베딩으로 변환
+  const description = formData.get('description') as string
+  const embedding = await generateEmbedding(description)
+  
+  // 3. Pinecone에 벡터 저장
+  await upsertVector(
+    'products',
+    product.id,
+    embedding,
+    {
+      title: product.title,
+      category: product.category,
+      price: product.price,
+    }
+  )
+  
+  return product
+}
+```
+
+## 보안 규칙
+
+### ✅ 허용
+
+```typescript
+// Server Component
+export default async function ServerComponent() {
+  const index = await getIndex('products')
+  // 서버에서 Pinecone 사용 가능
+}
+
+// Server Action
+'use server'
+export async function myAction() {
+  const index = await getIndex('products')
+  // Server Action에서 Pinecone 사용 가능
+}
+
+// API Route
+export async function GET() {
+  const index = await getIndex('products')
+  // API Route에서 Pinecone 사용 가능
+}
+```
+
+### ❌ 금지
+
+```typescript
+// Client Component
+'use client'
+export function ClientComponent() {
+  // ❌ 클라이언트에서 Pinecone 직접 사용 금지!
+  const apiKey = process.env.PINECONE_API_KEY // undefined!
+  
+  // ✅ 대신 Server Action 호출
+  const searchProducts = async (query: string) => {
+    return await searchProductsAction(query)
+  }
+}
+```
+
+## 인덱스 설정
+
+Pinecone 대시보드에서 인덱스를 생성할 때:
+
+1. **Dimension**: 임베딩 벡터 차원 (예: OpenAI `text-embedding-3-small` = 1536)
+2. **Metric**: Cosine similarity (추천)
+3. **Region**: 가장 가까운 지역 선택
+4. **Environment**: Serverless 추천
+
+## 주의사항
+
+1. ⚠️ **서버 전용**: Pinecone API 키는 절대 클라이언트에 노출하지 않기
+2. ⚠️ **비용 관리**: 인덱스 크기와 쿼리 수에 따라 비용 발생
+3. ⚠️ **벡터 차원**: 인덱스 생성 후 차원 변경 불가
+4. ⚠️ **메타데이터 크기**: 메타데이터는 40KB 제한
+5. ⚠️ **동기화**: Supabase와 Pinecone 데이터 동기화 유지
+
+## 트러블슈팅
+
+### 환경 변수 오류
+```
+Error: Pinecone API key or host is not configured
+```
+- `.env.local` 파일 확인
+- 개발 서버 재시작
+- 변수명 확인: `PINECONE_API_KEY`, `PINECONE_HOST`
+
+### 벡터 차원 불일치
+```
+Error: Dimension mismatch
+```
+- 인덱스 차원과 벡터 차원이 일치하는지 확인
+- 임베딩 모델 변경 시 새 인덱스 생성 필요
+
+### 쿼리 속도 느림
+- `topK` 값 줄이기
+- 필터 조건 추가하여 검색 범위 축소
+- 인덱스 최적화 (Pinecone 대시보드)
+
+## 참고 자료
+
+- [Pinecone 공식 문서](https://docs.pinecone.io/)
+- [Pinecone Node.js SDK](https://github.com/pinecone-io/pinecone-ts-client)
+- [임베딩 모델 비교](https://docs.pinecone.io/docs/embeddings)
