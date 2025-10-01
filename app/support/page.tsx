@@ -101,39 +101,6 @@ export default function SupportPage() {
             </CardHeader>
             <CardContent>
               <div className="whitespace-pre-wrap">{message.content}</div>
-
-              {/* 출처 정보 표시 */}
-              {message.sources && message.sources.length > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm font-medium text-gray-600 mb-2">참고한 정보:</p>
-                  <div className="space-y-2">
-                    {message.sources.map((source, sourceIdx) => (
-                      <div
-                        key={source.id}
-                        className="text-sm bg-gray-50 p-3 rounded border"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-medium text-gray-500">
-                            출처 {sourceIdx + 1}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            (유사도: {(source.score * 100).toFixed(1)}%)
-                          </span>
-                        </div>
-                        {source.question && (
-                          <p className="font-medium text-gray-700">{source.question}</p>
-                        )}
-                        {source.answer && (
-                          <p className="text-gray-600 mt-1">{source.answer}</p>
-                        )}
-                        {source.content && !source.question && (
-                          <p className="text-gray-600">{source.content}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         ))}
